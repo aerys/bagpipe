@@ -32,7 +32,7 @@
     </div>
     <header class="jumbotron subhead">
       <div class="container">
-        <h1>bagpipe <small>Version: 0.1.0 By @Jackson Tian</small></h1>
+        <h1>bagpipe <small>Version: 0.2.0 By @Jackson Tian</small></h1>
         <p class="lead">
           bagpipe.js
         </p>
@@ -64,6 +64,24 @@
   <li class="level_2">
     <a href="#index_原理" title="原理">
       <i class="icon-chevron-right"></i>原理
+    </a>
+  </li>
+
+  <li class="level_2">
+    <a href="#index_模块状态" title="模块状态">
+      <i class="icon-chevron-right"></i>模块状态
+    </a>
+  </li>
+
+  <li class="level_2">
+    <a href="#index_最佳实践" title="最佳实践">
+      <i class="icon-chevron-right"></i>最佳实践
+    </a>
+  </li>
+
+  <li class="level_2">
+    <a href="#index_实际案例" title="实际案例">
+      <i class="icon-chevron-right"></i>实际案例
     </a>
   </li>
 
@@ -110,8 +128,8 @@
 // 设定最大并发数为10
 var bagpipe = new Bagpipe(10);
 for (var i = 0; i &lt; 100; i++) {
-  bagpipe.push(async, [], function () {
-    // 异步调用
+  bagpipe.push(async, function () {
+    // 异步回调执行
   });
 }</code></pre>
 <p>是的，调用方式仅仅是将方法、参数、回调分拆一下通过<code>push</code>交给<code>bagpipe</code>即可。
@@ -121,9 +139,39 @@ for (var i = 0; i &lt; 100; i++) {
 
 </p>
 <h2>原理</h2>
-<p><code>Bagpipe</code>通过<code>push</code>将调用传入内部队列。如果活跃调用小于最大并发数，将会被取出直接执行，反之则继续呆在队列中。当一个异步调用结束的时候，会从队列前取出调用执行。以此来保证异步调用的活跃量不高于限定值。
+<p><code>Bagpipe</code>通过<code>push</code>将调用传入内部队列。如果活跃调用小于最大并发数，将会被取出直接执行，反之则继续呆在队列中。当一个异步调用结束的时候，会从队列前取出调用执行。以此来保证异步调用的活跃量不高于限定值。<br>当队列的长度大于100或者大于最大并发数的2倍时，Bagpipe对象将会触发它的<code>full</code>事件，该事件传递队列长度值。该值有助于评估业务性能参数。示例如下：
 
 </p>
+<pre><code>bagpipe.on(&#39;full&#39;, function (length) {
+  console.warn(&#39;底层系统处理不能及时完成，队列拥堵，目前队列长度为:&#39; + length);
+});</code></pre>
+<h2>模块状态</h2>
+<p>单元测试通过状态：<a href="http://travis-ci.org/JacksonTian/bagpipe"><img src="https://secure.travis-ci.org/JacksonTian/bagpipe.png" alt="Build Status"></a>。单元测试覆盖率<a href="http://html5ify.com/bagpipe/coverage.html">100%</a>。
+
+</p>
+<h2>最佳实践</h2>
+<ul>
+<li>确保异步调用的最后一个参数为回调参数</li>
+<li>监听<code>full</code>事件，以增加你对业务性能的评估</li>
+<li>目前异步方法未支持上下文。确保异步方法内部没有<code>this</code>引用</li>
+</ul>
+<h2>实际案例</h2>
+<p>当你需要遍历文件目录的时候，异步可以确保充分利用IO。你可以轻松发起成千上万个文件的读取。但是，系统文件描述符是有限的。不服的话，遇见下面这个错误再来重读此文。
+
+</p>
+<pre><code>Error: EMFILE, too many open files</code></pre>
+<p>也有人会考虑用同步方法来进行处理。但是，同步时，CPU与IO并不能并行利用，一定情况下，性能是不可弃的一项指标。用上<code>Bagpipe</code>，可以轻松享受并发，也能限制并发。
+
+</p>
+<pre><code>var bagpipe = new Bagpipe(10);
+
+var files = [&#39;这里有很多很多文件&#39;];
+for (var i = 0; i &lt; files.length; i++) {
+  bagpipe.push(fs.readFile, files[i], &#39;utf-8&#39;, function (err, data) {
+    // 不会因为文件描述符过多出错
+    // 妥妥的
+  });
+}</code></pre>
 <h2>License</h2>
 <p>在<a href="https://github.com/JacksonTian/bagpipe/blob/master/MIT-License">MIT</a>许可证下发布，欢迎享受开源
 
