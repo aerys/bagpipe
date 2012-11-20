@@ -154,6 +154,7 @@ for (var i = 0; i &lt; 100; i++) {
 <li>确保异步调用的最后一个参数为回调参数</li>
 <li>监听<code>full</code>事件，以增加你对业务性能的评估</li>
 <li>目前异步方法未支持上下文。确保异步方法内部没有<code>this</code>引用</li>
+<li>异步调用应当具备timeout的业务处理，无论业务是否完成，总在一定的时间内保证返回</li>
 </ul>
 <h2>实际案例</h2>
 <p>当你需要遍历文件目录的时候，异步可以确保充分利用IO。你可以轻松发起成千上万个文件的读取。但是，系统文件描述符是有限的。不服的话，遇见下面这个错误再来重读此文。
@@ -167,6 +168,7 @@ for (var i = 0; i &lt; 100; i++) {
 
 var files = [&#39;这里有很多很多文件&#39;];
 for (var i = 0; i &lt; files.length; i++) {
+  // fs.readFile(files[i], &#39;utf-8&#39;, function (err, data) {
   bagpipe.push(fs.readFile, files[i], &#39;utf-8&#39;, function (err, data) {
     // 不会因为文件描述符过多出错
     // 妥妥的
