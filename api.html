@@ -40,96 +40,157 @@
     </header>
 <div class="container content">
   <div class="row">
-  	<div class="span3 bs-docs-sidebar">
+    <div class="span3 bs-docs-sidebar">
       <ul class="nav nav-list bs-docs-sidenav affix">
 
-  <li class="level_2">
-    <a href="#index_起源" title="起源">
-      <i class="icon-chevron-right"></i>起源
-    </a>
-  </li>
-
-  <li class="level_2">
-    <a href="#index_安装" title="安装">
-      <i class="icon-chevron-right"></i>安装
-    </a>
-  </li>
-
-  <li class="level_2">
-    <a href="#index_API" title="API">
-      <i class="icon-chevron-right"></i>API
-    </a>
-  </li>
-
-  <li class="level_2">
-    <a href="#index_原理" title="原理">
-      <i class="icon-chevron-right"></i>原理
-    </a>
-  </li>
-
-  <li class="level_2">
-    <a href="#index_License" title="License">
-      <i class="icon-chevron-right"></i>License
-    </a>
+  <li>
+    <a href="#api_bagpipe"><i class="icon-chevron-right"></i>bagpipe</a>
   </li>
 
 </ul>
 
     </div>
     <div class="span9">
-      <section>
-        <h1>Bagpipe(风笛)</h1>
-<p>You are the bagpiper.  
+      
+        <section id="api_bagpipe" class="api">
+  <h2>bagpipe: API索引</h2>
+  <ul class="indexs">
+  
+    <li>
+      <a href="#_Bagpipe">Bagpipe</a>
+    </li>
 
-</p>
-<h2>起源</h2>
-<p>在Node中我们可以十分方便利用异步和并行来提升我们的业务速度。但是，如果并发量过大，我们的服务器却可能吃不消，我们需要限制并发量。尽管<code>http</code>模块自身有<a href="http://nodejs.org/docs/latest/api/http.html#http_class_http_agent">http.Agent</a>这样的玩意，用于控制socket的数量，但是通常我们的异步API早就封装好了。改动API的内部agent是不现实的，那么我们自己在逻辑层实现吧。
+    <li>
+      <a href="#_push">push</a>
+    </li>
 
-</p>
-<h2>安装</h2>
-<pre><code>npm install bagpipe</code></pre>
-<h2>API</h2>
-<p><code>Bagpipe</code>暴露的API只有构造器和实例方法<code>push</code>。
+  </ul>
+  <hr />
 
-</p>
-<p>在原始状态下，我们执行并发可能是如下这样的，这会形成100个并发异步调用。
+  
+  <h3 id="_Bagpipe">
+    Bagpipe
+  </h3>
+  
 
-</p>
-<pre><code>for (var i = 0; i &lt; 100; i++) {
-  async(function () {
-    // 异步调用
+  <p>构造器，传入限流值，设置异步调用最大并发数</p>
+
+<h2>Examples</h2>
+
+<div class="highlight"><pre lang="">var bagpipe = new Bagpipe(100);
+bagpipe.push(fs.readFile, ['path', 'utf-8'], function (err, data) {
+  // TODO
+});
+</pre></div>
+
+<h2>Events</h2>
+
+<ul>
+<li><code>full</code>, 当活动异步达到限制值时，后续异步调用将被暂存于队列中。当队列的长度大于限制值的2倍或100的时候时候，触发<code>full</code>事件。事件传递队列长度值。</li>
+</ul>
+
+  <table class="table">
+  
+    <tr>
+      <td>函数</td>
+      <td>Bagpipe()</td> 
+      <td></td>
+      <td>Bagpipe</td>
+    </tr>
+  
+
+    <tr>
+      <td>参数</td>
+      <td>limit(Number)</td>
+      <td colspan="2">并发数限制值</td>
+    </tr>
+  
+
+    <tr>
+      <td>参数</td>
+      <td>disabled(Boolean)</td>
+      <td colspan="2">是否禁用并发限制，多用于测试</td>
+    </tr>
+  
+
+  
+    <tr>
+      <td>代码</td><td colspan="3"><pre><code>var Bagpipe = function (limit, disabled) {
+  events.EventEmitter.call(this);
+  this.limit = limit;
+  this.active = 0;
+  this.queue = [];
+  this.disabled = !!disabled;
+};
+util.inherits(Bagpipe, events.EventEmitter);</code></pre></td>
+    </tr>
+  
+  </table>
+  
+  
+  <h3 id="_push">
+    push
+  </h3>
+  
+
+  <p>推入方法，参数。最后一个参数为回调函数</p>
+
+  <table class="table">
+  
+    <tr>
+      <td>方法</td>
+      <td>Bagpipe.prototype.push()</td> 
+      <td></td>
+      <td>push</td>
+    </tr>
+  
+
+    <tr>
+      <td>参数</td>
+      <td>method(Function)</td>
+      <td colspan="2">异步方法</td>
+    </tr>
+  
+
+    <tr>
+      <td>参数</td>
+      <td>args(Mix)</td>
+      <td colspan="2">参数列表，最后一个参数为回调函数。</td>
+    </tr>
+  
+
+  
+    <tr>
+      <td>代码</td><td colspan="3"><pre><code>Bagpipe.prototype.push = function (method) {
+  var args = [].slice.call(arguments, 1);
+  var callback = args[args.length - 1];
+  if (typeof callback !== 'function') {
+    args.push(function () {});
+  }
+  if (this.disabled || this.limit &lt; 1) {
+    method.apply(null, args);
+    return this;
+  }
+  this.queue.push({
+    method: method,
+    args: args
   });
-}</code></pre>
-<p>如果需要限制并发，你的方案会是怎样？
 
-</p>
-<p><code>Bagpipe</code>的方案是如下这样的：
+  this.next();
 
-</p>
-<pre><code>var Bagpipe = require(&#39;bagpipe&#39;);
-// 设定最大并发数为10
-var bagpipe = new Bagpipe(10);
-for (var i = 0; i &lt; 100; i++) {
-  bagpipe.push(async, [], function () {
-    // 异步调用
-  });
-}</code></pre>
-<p>是的，调用方式仅仅是将方法、参数、回调分拆一下通过<code>push</code>交给<code>bagpipe</code>即可。
+  var upper = Math.min(this.limit * 2, 100);
+  if (this.queue.length &gt; upper) {
+    this.emit('full', this.queue.length);
+  }
 
-</p>
-<p>这个方案与你预想的方案相比，如何？
-
-</p>
-<h2>原理</h2>
-<p><code>Bagpipe</code>通过<code>push</code>将调用传入内部队列。如果活跃调用小于最大并发数，将会被取出直接执行，反之则继续呆在队列中。当一个异步调用结束的时候，会从队列前取出调用执行。以此来保证异步调用的活跃量不高于限定值。
-
-</p>
-<h2>License</h2>
-<p>在<a href="https://github.com/JacksonTian/bagpipe/blob/master/MIT-License">MIT</a>许可证下发布，欢迎享受开源
-
-</p>
-
-      </section>
+  return this;
+};</code></pre></td>
+    </tr>
+  
+  </table>
+  
+</section>
+      
     </div>
   </div>
 </div>
