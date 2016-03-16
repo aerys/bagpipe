@@ -1,6 +1,6 @@
 {
   "name": "bagpipe",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Concurrency limit",
   "keywords": [
     "limiter",
@@ -38,5 +38,8 @@
   },
   "bugs": {
     "url": "https://github.com/JacksonTian/bagpipe/issues"
+  },
+  "dependencies": {
+    "inherits": "git://github.com/ivshti/inherits.git"
   }
 }
