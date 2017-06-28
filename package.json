@@ -40,6 +40,6 @@
     "url": "https://github.com/JacksonTian/bagpipe/issues"
   },
   "dependencies": {
-    "inherits": "git://github.com/ivshti/inherits.git"
+    "inherits": "Ivshti/inherits"
   }
 }
